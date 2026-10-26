@@ -1,0 +1,71 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE and Editor configs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Dataset files - DO NOT COMMIT RAW VIDEO FILES
+# Directory structure is preserved via .gitkeep
+data/normal/*
+!data/normal/.gitkeep
+data/fall/*
+!data/fall/.gitkeep
+
+# Ignore common video formats anywhere in repo
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+
+# Output videos and artifacts
+outputs/*
+!outputs/.gitkeep
+
+# Downloaded model weights
+*.pt
+*.onnx
+*.engine
+*.bin
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs and runtime files
+*.log
+runs/
