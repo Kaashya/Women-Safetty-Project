@@ -3,3 +3,6 @@ ultralytics>=8.0.0
 opencv-python>=4.8.0
 numpy>=1.23.0
 lap>=0.5.12
+
+# Member 2 Dependencies: Pose Estimation & Safety Analytics
+mediapipe>=0.10.14
