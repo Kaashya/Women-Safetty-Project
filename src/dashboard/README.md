@@ -1,58 +1,40 @@
-# Member 3 Extension Point: Streamlit Dashboard
+# Member 3: Streamlit Dashboard
 
-This directory is reserved for **Member 3** to build the Streamlit-based monitoring dashboard, alert triage UI, and verification workflow.
+The dashboard is the UI and persistence consumer for the existing Member 1 and Member 2 pipeline. It does not load or implement another detector, tracker, pose model, or safety heuristic.
 
----
+## Run
 
-## 1. Responsibilities for Member 3
+From the repository root, install project requirements and start Streamlit:
 
-1. **Dashboard Interface**:
-   - Provide video selection (e.g. choose sample video from `data/normal/` or `data/fall/`, or upload `.mp4`).
-   - Display real-time video stream using `st.image()` with `annotated_frame`.
-   - Display live metrics: current FPS, total people tracked, current timestamp, camera ID.
-2. **Alert Monitoring Panel**:
-   - Display incoming safety events (from Member 2's event detector).
-   - Display event details: Event Type, Timestamp, Camera ID, Person Track ID, Confidence, Status.
-3. **Human Verification Workflow**:
-   - Provide **"Verify"** and **"Dismiss"** action buttons for each pending alert.
-   - Update event status in the UI and persist to SQLite (see `src/database/README.md`).
+```bash
+pip install -r requirements.txt
+streamlit run src/dashboard/app.py
+```
 
----
+Upload an MP4, AVI, MOV, or MKV clip in the sidebar, optionally enter a camera ID, then select **Start Analysis**. Analysis does not start automatically. **Stop / Reset** releases the video and safety resources and clears the current feed state without deleting saved events.
 
-## 2. Integration with Member 1's Detection Pipeline
-
-Member 1's `PersonDetector` runs in pure headless mode and **never calls `cv2.imshow()`**.  
-Member 3 can import and iterate over video frames directly within Streamlit:
+## Per-frame integration
 
 ```python
-import streamlit as st
-import cv2
-from src.detection import PersonDetector
-
-st.set_page_config(page_title="Women Safety Analytics", layout="wide")
-st.title("AI CCTV Safety Monitoring Dashboard")
-
-video_path = st.sidebar.selectbox("Select Video", ["data/normal/walking_01.mp4", "data/fall/fall_01.mp4"])
-detector = PersonDetector(confidence=0.4, track=True)
-
-video_placeholder = st.empty()
-info_placeholder = st.sidebar.empty()
-
-for frame_data in detector.process_video(video_path):
-    frame_id = frame_data["frame_id"]
-    timestamp = frame_data["timestamp"]
-    annotated_frame = frame_data["annotated_frame"]
-    people = frame_data["people"]
-
-    # Convert BGR to RGB for Streamlit rendering
-    rgb_frame = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB)
-    video_placeholder.image(rgb_frame, channels="RGB", use_container_width=True)
-
-    info_placeholder.markdown(f"""
-    **Frame:** {frame_id}  
-    **Timestamp:** {timestamp:.2f}s  
-    **People Detected:** {len(people)}  
-    """)
-
-    # MEMBER 3: Interleave Member 2's safety check and display alerts here
+frame_data = person_detector.detect_frame(frame, frame_id=frame_id, timestamp=timestamp)
+events = safety_detector.process_frame(frame_data)
+annotated_frame = safety_detector.annotate_events(
+    frame_data["annotated_frame"],
+    events=events,
+    people=frame_data["people"],
+)
 ```
+
+This is the public integration used by the app. It displays the BGR annotated image as RGB and persists emitted events through `src/database/database.py`. Streamlit session state retains the model instances and temporal safety detector between fragment updates; a new video constructs fresh instances so per-video tracking and safety state starts clean.
+
+## Operator workflow and event language
+
+- The dashboard displays **Potential Distress Gesture** and **Sustained Proximity** as potential safety events requiring human verification.
+- **Verify** changes `pending` to `verified`; this records an operator review and is not proof of a crime.
+- **Dismiss** changes `pending` to `dismissed`. Dismissed alerts remain in event history.
+- Event scores are heuristic, not calibrated probabilities. Track IDs are temporary labels and do not identify people.
+- The Event History table can be filtered by status and event type.
+
+Uploaded video bytes are written to a temporary file because OpenCV opens a file path. The file is released and removed on video completion or reset. The database is local at `data/events.db`; `.db` files are ignored by Git.
+
+Processing is sequential and runs as quickly as the available hardware allows. The dashboard does not require CCTV or RTSP input.

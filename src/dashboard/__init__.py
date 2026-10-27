@@ -1,3 +1,1 @@
-"""
-Streamlit Dashboard Module (Member 3 Extension Point).
-"""
+"""Streamlit dashboard application and presentation helpers."""
