@@ -40,7 +40,7 @@ flowchart TD
     K --> L[Human Verification Triage - Verify / Dismiss]
     L --> M[SQLite Event History]
 
-    subgraph Member3 [Member 3: Pending Handoff]
+    subgraph Member3 [Member 3: Implemented]
         K
         L
         M
@@ -64,9 +64,15 @@ flowchart TD
 | **Safety Event Manager** | Member 2 | **Complete** | `src/safety/event_manager.py` | Factory & validator for standard event dictionaries. |
 | **Safety Facade API** | Member 2 | **Complete** | `src/safety/safety_event_detector.py` | Unified public facade & visual overlay helper. |
 | **Member 2 Integrated Demo** | Member 2 | **Complete** | `demo_safety.py` | CLI demo integrating Member 1 detection + Member 2 events. |
-| **Streamlit Dashboard** | Member 3 | *Pending* | `src/dashboard/` | Interactive video player, alert cards, status badges. |
-| **Alert Verification UI** | Member 3 | *Pending* | `src/dashboard/` | "Verify" and "Dismiss" human review triage buttons. |
-| **SQLite Alert Storage** | Member 3 | *Pending* | `src/database/` | Persists alerts, timestamps, operator decisions, audit trail. |
+| **Streamlit Dashboard** | Member 3 | **Complete** | `src/dashboard/app.py` | Uploaded-video processing and annotated video feed. |
+| **Alert Verification UI** | Member 3 | **Complete** | `src/dashboard/app.py` | Pending alerts can be marked verified or dismissed. |
+| **SQLite Event Storage** | Member 3 | **Complete** | `src/database/database.py` | Persists events and current review status; unique identity prevents rerun duplicates. |
+
+### Member 3 Runtime Flow
+
+The dashboard creates one `VideoProcessor`, `PersonDetector`, and `SafetyEventDetector` when the operator starts a video. It reads one frame per Streamlit fragment tick, passes that frame to `PersonDetector.detect_frame()`, passes the returned `frame_data` to `SafetyEventDetector.process_frame()`, then overlays Member 2's events on Member 1's annotated image. Each event is inserted into SQLite using a deterministic unique identity. The detector objects and per-video temporal state remain in Streamlit session state between fragment updates; they are released at end-of-video or reset.
+
+The dashboard does not implement a detector, tracker, pose estimator, or safety heuristic. It displays the latest frame's person count and the database's event/status counts.
 
 ---
 
@@ -109,6 +115,15 @@ When a potential safety condition is triggered:
     }
 }
 ```
+
+### C. Dashboard and persistence
+
+- Launch from the repository root with `streamlit run src/dashboard/app.py`.
+- Upload formats are MP4, AVI, MOV, and MKV; a temporary local file is removed after completion or reset.
+- The default camera ID is `CAM_01`; the selected ID is passed to the safety detector at initialization.
+- `src/database/database.py` creates `data/events.db` and an `events` table with JSON `track_ids`, video timestamp, frame ID, camera ID, heuristic confidence, review status, source filename, timestamps, and a unique `identity_key`.
+- `pending` means not reviewed; `verified` and `dismissed` record the operator's review outcome. These statuses do not make a legal or factual determination about a crime.
+- The event score is a heuristic, not a calibrated probability. Tracking IDs are temporary and can change after occlusion.
 
 ---
 

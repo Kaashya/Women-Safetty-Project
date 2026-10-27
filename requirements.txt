@@ -5,4 +5,8 @@ numpy>=1.23.0
 lap>=0.5.12
 
 # Member 2 Dependencies: Pose Estimation & Safety Analytics
-mediapipe>=0.10.14
+# Member 2 uses the legacy mp.solutions.pose API.
+mediapipe>=0.10.14,<0.10.22
+
+# Member 3 Dependencies: Dashboard
+streamlit>=1.37.0
