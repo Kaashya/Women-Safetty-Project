@@ -1,6 +1,7 @@
 """Streamlit application integrating the existing detection and safety modules."""
 
 from pathlib import Path
+import sys
 import sqlite3
 import tempfile
 from typing import Any, Optional
@@ -8,6 +9,10 @@ from typing import Any, Optional
 import cv2
 import streamlit as st
 
+ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+    
 from src.dashboard.helpers import (
     event_label,
     format_event_score,
